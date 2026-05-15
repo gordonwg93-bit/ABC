@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Aussie Star Handwriting</title>
+    <title>Aussie Star Handwriting - Smart Stars</title>
     <link href="https://fonts.googleapis.com/css2?family=Andika&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
         body { 
             font-family: 'Andika', sans-serif; 
             touch-action: none; 
@@ -20,7 +19,6 @@
             width: 100vw;
             overflow: hidden; 
         }
-
         .header { 
             width: 100%; 
             background: white; 
@@ -31,7 +29,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
             z-index: 10;
         }
-
         .canvas-container { 
             position: relative; 
             flex-grow: 1;
@@ -43,12 +40,9 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
             overflow: hidden;
         }
-
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         #drawCanvas { z-index: 2; cursor: crosshair; }
-
         .toolbar { display: flex; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; justify-content: center; }
-
         button { 
             padding: 12px 20px; 
             border-radius: 16px; 
@@ -59,11 +53,9 @@
             font-size: 18px; 
             transition: all 0.2s;
         }
-
         .btn-blue { background: #3b82f6; color: white; }
         .btn-red { background: #fee2e2; color: #ef4444; }
         .btn-grey { background: #e2e8f0; color: #475569; }
-        
         .btn-star { 
             background: #facc15; 
             color: #854d0e; 
@@ -75,9 +67,7 @@
             margin-bottom: 10px;
             box-shadow: 0 6px 0 #ca8a04;
         }
-
         .active { outline: 5px solid #3b82f6 !important; background: #1e293b !important; color: white !important; }
-        
         .star-count { 
             background: #fef9c3; 
             padding: 5px 20px; 
@@ -87,7 +77,6 @@
             border: 2px solid #fde047;
             font-size: 22px;
         }
-
         #letterDisplay { font-size: 48px; font-weight: 400; color: #1e293b; }
     </style>
 </head>
@@ -106,7 +95,7 @@
         <button id="phonicBtn" class="btn-blue" onclick="speakPhonics()">📢 Phonics</button>
         <button id="penBtn" class="btn-grey active" onclick="setTool('pen')">✏️ Pen</button>
         <button id="eraserBtn" class="btn-grey" onclick="setTool('eraser')">🧽 Eraser</button>
-        <button class="btn-red" onclick="clearPage()">🗑️ Clear</button>
+        <button class="btn-red" onclick="clearPage()">🗑️ Clear All</button>
     </div>
 
     <div class="canvas-container" id="container">
@@ -119,10 +108,10 @@
     <script>
         let currentIdx = 0;
         const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-        let totalStars = 0;
+        let totalStars = parseInt(localStorage.getItem('total_stars')) || 0;
         let tool = 'pen';
         let isDrawing = false;
-        let history = {};
+        let starsOnPage = JSON.parse(localStorage.getItem('stars_positions')) || {};
 
         const bgCanvas = document.getElementById('bgCanvas');
         const drawCanvas = document.getElementById('drawCanvas');
@@ -133,10 +122,11 @@
 
         function resize() {
             const rect = document.getElementById('container').getBoundingClientRect();
-            bgCanvas.width = rect.width * 2;
-            bgCanvas.height = rect.height * 2;
-            drawCanvas.width = rect.width * 2;
-            drawCanvas.height = rect.height * 2;
+            const dpr = window.devicePixelRatio || 1;
+            bgCanvas.width = rect.width * dpr;
+            bgCanvas.height = rect.height * dpr;
+            drawCanvas.width = rect.width * dpr;
+            drawCanvas.height = rect.height * dpr;
             renderGrid();
             reloadHistory();
         }
@@ -144,9 +134,9 @@
         window.addEventListener('resize', resize);
 
         function init() {
+            document.getElementById('starTotal').innerText = totalStars;
             resize();
             setupDrawing();
-            // Force redraw when font loads
             document.fonts.ready.then(renderGrid);
         }
 
@@ -206,34 +196,61 @@
             tool = t;
             document.getElementById('penBtn').className = t === 'pen' ? 'btn-grey active' : 'btn-grey';
             document.getElementById('eraserBtn').className = t === 'eraser' ? 'btn-grey active' : 'btn-grey';
-            if (t === 'star') document.getElementById('starBtn').classList.add('active');
-            else document.getElementById('starBtn').classList.remove('active');
-            document.getElementById('starBtn').innerText = t === 'star' ? "TAP ON SCREEN! ⭐" : "GIVE A STAR ⭐";
+            if (t === 'star') {
+                document.getElementById('starBtn').classList.add('active');
+                document.getElementById('starBtn').innerText = "TAP TO PLACE ⭐";
+            } else {
+                document.getElementById('starBtn').classList.remove('active');
+                document.getElementById('starBtn').innerText = "GIVE A STAR ⭐";
+            }
+        }
+
+        function saveMemory() {
+            const char = letters[currentIdx];
+            localStorage.setItem(`handwriting_${char}`, drawCanvas.toDataURL("image/png"));
+            localStorage.setItem('total_stars', totalStars);
+            localStorage.setItem('stars_positions', JSON.stringify(starsOnPage));
         }
 
         function changeLetter(dir) {
-            history[letters[currentIdx]] = drawCanvas.toDataURL();
+            saveMemory();
             currentIdx = (currentIdx + dir + 26) % 26;
-            drawCtx.clearRect(0,0,drawCanvas.width, drawCanvas.height);
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
             renderGrid();
             reloadHistory();
         }
 
         function reloadHistory() {
-            if (history[letters[currentIdx]]) {
+            const char = letters[currentIdx];
+            const savedData = localStorage.getItem(`handwriting_${char}`);
+            if (savedData) {
                 let img = new Image();
-                img.src = history[letters[currentIdx]];
-                img.onload = () => drawCtx.drawImage(img, 0, 0, drawCanvas.width, drawCanvas.height);
+                img.onload = () => {
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    drawCtx.drawImage(img, 0, 0);
+                };
+                img.src = savedData;
             }
         }
 
         function clearPage() {
-            if(confirm("Clear this page?")) drawCtx.clearRect(0,0,drawCanvas.width, drawCanvas.height);
+            if(confirm("Clear this entire page?")) {
+                const char = letters[currentIdx];
+                // Subtract stars only from the current page
+                if (starsOnPage[char]) {
+                    totalStars -= starsOnPage[char].length;
+                    starsOnPage[char] = [];
+                }
+                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                document.getElementById('starTotal').innerText = totalStars;
+                saveMemory();
+            }
         }
 
         function setupDrawing() {
             const getPos = (e) => {
                 const rect = drawCanvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
                 const clientX = e.clientX || (e.touches && e.touches[0].clientX);
                 const clientY = e.clientY || (e.touches && e.touches[0].clientY);
                 return { 
@@ -244,13 +261,40 @@
 
             const start = (e) => {
                 const pos = getPos(e);
+                const char = letters[currentIdx];
+
                 if (tool === 'star') {
+                    drawCtx.globalCompositeOperation = 'source-over';
                     drawCtx.font = `${drawCanvas.width * 0.12}px serif`;
                     drawCtx.fillText("⭐", pos.x - (drawCanvas.width * 0.06), pos.y + (drawCanvas.width * 0.045));
+                    
+                    // Track star position on this page
+                    if (!starsOnPage[char]) starsOnPage[char] = [];
+                    starsOnPage[char].push({x: pos.x, y: pos.y});
+                    
                     totalStars++;
                     document.getElementById('starTotal').innerText = totalStars;
+                    saveMemory();
                     return;
                 }
+
+                if (tool === 'eraser') {
+                    // Check if eraser hit any stars
+                    if (starsOnPage[char]) {
+                        const eraserRadius = 40; 
+                        const remainingStars = starsOnPage[char].filter(s => {
+                            const dist = Math.sqrt((s.x - pos.x)**2 + (s.y - pos.y)**2);
+                            if (dist < eraserRadius) {
+                                totalStars = Math.max(0, totalStars - 1);
+                                document.getElementById('starTotal').innerText = totalStars;
+                                return false;
+                            }
+                            return true;
+                        });
+                        starsOnPage[char] = remainingStars;
+                    }
+                }
+
                 isDrawing = true;
                 drawCtx.beginPath();
                 drawCtx.moveTo(pos.x, pos.y);
@@ -258,22 +302,48 @@
                 drawCtx.lineCap = 'round';
                 drawCtx.lineJoin = 'round';
                 drawCtx.globalCompositeOperation = tool === 'pen' ? 'source-over' : 'destination-out';
-                drawCtx.strokeStyle = '#1e293b';
+                drawCtx.strokeStyle = tool === 'pen' ? '#1e293b' : 'rgba(0,0,0,1)';
             };
 
             const move = (e) => {
                 if (!isDrawing) return;
                 const pos = getPos(e);
+                
+                // If erasing, continuously check for star collisions
+                if (tool === 'eraser') {
+                    const char = letters[currentIdx];
+                    if (starsOnPage[char]) {
+                        const eraserRadius = 40;
+                        const remainingStars = starsOnPage[char].filter(s => {
+                            const dist = Math.sqrt((s.x - pos.x)**2 + (s.y - pos.y)**2);
+                            if (dist < eraserRadius) {
+                                totalStars = Math.max(0, totalStars - 1);
+                                document.getElementById('starTotal').innerText = totalStars;
+                                return false;
+                            }
+                            return true;
+                        });
+                        starsOnPage[char] = remainingStars;
+                    }
+                }
+
                 drawCtx.lineTo(pos.x, pos.y);
                 drawCtx.stroke();
             };
 
+            const stop = () => {
+                if (isDrawing) {
+                    isDrawing = false;
+                    saveMemory();
+                }
+            };
+
             drawCanvas.addEventListener('mousedown', start);
             drawCanvas.addEventListener('mousemove', move);
-            window.addEventListener('mouseup', () => isDrawing = false);
+            window.addEventListener('mouseup', stop);
             drawCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e); }, {passive: false});
             drawCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); }, {passive: false});
-            drawCanvas.addEventListener('touchend', () => isDrawing = false);
+            drawCanvas.addEventListener('touchend', stop);
         }
 
         init();
