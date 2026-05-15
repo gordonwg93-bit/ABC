@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Aussie Star - Perfect Sync</title>
+    <title>Aussie Star - Complete Master Vault</title>
     <link href="https://fonts.googleapis.com/css2?family=Andika&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -53,6 +53,7 @@
             font-size: 16px; 
             transition: all 0.2s;
         }
+        .btn-blue { background: #3b82f6; color: white; box-shadow: 0 4px 0 #1d4ed8; }
         .btn-green { background: #22c55e; color: white; box-shadow: 0 4px 0 #166534; }
         .btn-orange { background: #f97316; color: white; box-shadow: 0 4px 0 #9a3412; }
         .btn-red { background: #fee2e2; color: #ef4444; }
@@ -93,6 +94,7 @@
     </div>
 
     <div class="toolbar">
+        <button id="phonicBtn" class="btn-blue" onclick="speakPhonics()">📢 Phonics</button>
         <button id="penBtn" class="btn-grey active" onclick="setTool('pen')">✏️ Pen</button>
         <button id="eraserBtn" class="btn-grey" onclick="setTool('eraser')">🧽 Eraser</button>
         <button class="btn-green" onclick="manualSave()">💾 SAVE ALL</button>
@@ -119,6 +121,8 @@
         const drawCanvas = document.getElementById('drawCanvas');
         const bgCtx = bgCanvas.getContext('2d');
         const drawCtx = drawCanvas.getContext('2d');
+
+        const phonics = {'A':'ah','B':'buh','C':'cuh','D':'duh','E':'eh','F':'ff','G':'guh','H':'huh','I':'ih','J':'juh','K':'kuh','L':'lll','M':'mmm','N':'nnn','O':'oh','P':'puh','Q':'kwuh','R':'rrr','S':'sss','T':'tuh','U':'uh','V':'vuh','W':'wuh','X':'ks','Y':'yuh','Z':'zzz'};
 
         function resize() {
             const rect = document.getElementById('container').getBoundingClientRect();
@@ -177,6 +181,18 @@
             drawRow(0.58, "Small Letters", char.toLowerCase());
         }
 
+        function speakPhonics() {
+            window.speechSynthesis.cancel();
+            setTimeout(() => {
+                const char = letters[currentIdx];
+                const name = char === 'Z' ? 'Zed' : char;
+                const utterance = new SpeechSynthesisUtterance(name + "... " + phonics[char]);
+                utterance.lang = 'en-AU';
+                utterance.rate = 0.55;
+                window.speechSynthesis.speak(utterance);
+            }, 100);
+        }
+
         function setTool(t) {
             tool = t;
             document.getElementById('penBtn').className = t === 'pen' ? 'btn-grey active' : 'btn-grey';
@@ -219,7 +235,6 @@
                 drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
                 drawCtx.drawImage(img, 0, 0);
                 
-                // Sync internal star state with the loaded data
                 starsOnPage = savedStars;
                 totalStars = savedTotal;
                 document.getElementById('starTotal').innerText = totalStars;
