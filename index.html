@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Aussie Star Handwriting - Smart Stars</title>
+    <title>Aussie Star - Perfect Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Andika&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -22,7 +22,7 @@
         .header { 
             width: 100%; 
             background: white; 
-            padding: 10px 20px; 
+            padding: 8px 15px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
@@ -32,70 +32,72 @@
         .canvas-container { 
             position: relative; 
             flex-grow: 1;
-            width: 95vw; 
+            width: 96vw; 
             max-width: 950px;
             margin: 5px 0; 
             background: white; 
-            border-radius: 25px; 
+            border-radius: 20px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
             overflow: hidden;
         }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         #drawCanvas { z-index: 2; cursor: crosshair; }
-        .toolbar { display: flex; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; justify-content: center; }
+        .toolbar { display: flex; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; justify-content: center; padding: 0 5px; }
         button { 
-            padding: 12px 20px; 
-            border-radius: 16px; 
+            padding: 10px 15px; 
+            border-radius: 12px; 
             border: none; 
             font-weight: bold; 
             cursor: pointer; 
             font-family: 'Andika', sans-serif; 
-            font-size: 18px; 
+            font-size: 16px; 
             transition: all 0.2s;
         }
-        .btn-blue { background: #3b82f6; color: white; }
+        .btn-green { background: #22c55e; color: white; box-shadow: 0 4px 0 #166534; }
+        .btn-orange { background: #f97316; color: white; box-shadow: 0 4px 0 #9a3412; }
         .btn-red { background: #fee2e2; color: #ef4444; }
         .btn-grey { background: #e2e8f0; color: #475569; }
         .btn-star { 
             background: #facc15; 
             color: #854d0e; 
-            width: 95vw; 
+            width: 96vw; 
             max-width: 950px; 
-            height: 75px; 
-            font-size: 26px; 
+            height: 65px; 
+            font-size: 24px; 
             font-weight: 900;
-            margin-bottom: 10px;
-            box-shadow: 0 6px 0 #ca8a04;
+            margin-bottom: 8px;
+            box-shadow: 0 5px 0 #ca8a04;
         }
-        .active { outline: 5px solid #3b82f6 !important; background: #1e293b !important; color: white !important; }
+        .active { outline: 4px solid #3b82f6 !important; background: #1e293b !important; color: white !important; }
         .star-count { 
             background: #fef9c3; 
-            padding: 5px 20px; 
-            border-radius: 20px; 
+            padding: 4px 15px; 
+            border-radius: 15px; 
             color: #854d0e; 
             font-weight: 800; 
             border: 2px solid #fde047;
-            font-size: 22px;
+            font-size: 20px;
         }
-        #letterDisplay { font-size: 48px; font-weight: 400; color: #1e293b; }
+        #letterDisplay { font-size: 40px; font-weight: 400; color: #1e293b; line-height: 1; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <button onclick="changeLetter(-1)" style="font-size: 35px; background: none;">⬅️</button>
+        <button onclick="changeLetter(-1)" style="font-size: 30px; background: none;">⬅️</button>
         <div style="text-align: center;">
             <div id="letterDisplay">Aa</div>
             <div class="star-count">⭐ <span id="starTotal">0</span></div>
         </div>
-        <button onclick="changeLetter(1)" style="font-size: 35px; background: none;">➡️</button>
+        <button onclick="changeLetter(1)" style="font-size: 30px; background: none;">➡️</button>
     </div>
 
     <div class="toolbar">
-        <button id="phonicBtn" class="btn-blue" onclick="speakPhonics()">📢 Phonics</button>
         <button id="penBtn" class="btn-grey active" onclick="setTool('pen')">✏️ Pen</button>
         <button id="eraserBtn" class="btn-grey" onclick="setTool('eraser')">🧽 Eraser</button>
-        <button class="btn-red" onclick="clearPage()">🗑️ Clear All</button>
+        <button class="btn-green" onclick="manualSave()">💾 SAVE ALL</button>
+        <button class="btn-orange" onclick="manualLoad()">🔄 LOAD</button>
+        <button class="btn-red" onclick="clearPage()">🗑️ Clear</button>
     </div>
 
     <div class="canvas-container" id="container">
@@ -118,8 +120,6 @@
         const bgCtx = bgCanvas.getContext('2d');
         const drawCtx = drawCanvas.getContext('2d');
 
-        const phonics = {'A':'ah','B':'buh','C':'cuh','D':'duh','E':'eh','F':'ff','G':'guh','H':'huh','I':'ih','J':'juh','K':'kuh','L':'lll','M':'mmm','N':'nnn','O':'oh','P':'puh','Q':'kwuh','R':'rrr','S':'sss','T':'tuh','U':'uh','V':'vuh','W':'wuh','X':'ks','Y':'yuh','Z':'zzz'};
-
         function resize() {
             const rect = document.getElementById('container').getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
@@ -128,7 +128,7 @@
             drawCanvas.width = rect.width * dpr;
             drawCanvas.height = rect.height * dpr;
             renderGrid();
-            reloadHistory();
+            manualLoad(false); 
         }
 
         window.addEventListener('resize', resize);
@@ -144,16 +144,14 @@
             const char = letters[currentIdx];
             document.getElementById('letterDisplay').innerText = char + char.toLowerCase();
             bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-            
             const w = bgCanvas.width;
             const h = bgCanvas.height;
 
             function drawRow(yPercent, title, displayChar) {
                 const y = h * yPercent;
                 bgCtx.fillStyle = "#475569";
-                bgCtx.font = `bold ${h * 0.035}px 'Andika'`;
-                bgCtx.fillText(title, 40, y - (h * 0.025));
-
+                bgCtx.font = `bold ${h * 0.03}px 'Andika'`;
+                bgCtx.fillText(title, 40, y - (h * 0.02));
                 const boxSize = w * 0.17;
                 const spacing = w * 0.19;
 
@@ -163,9 +161,8 @@
                         let x = (w * 0.05) + (col * spacing);
                         bgCtx.strokeStyle = "#e2e8f0";
                         bgCtx.setLineDash([12, 12]);
-                        bgCtx.lineWidth = 3;
+                        bgCtx.lineWidth = 2;
                         bgCtx.strokeRect(x, rowY, boxSize, boxSize);
-                        
                         if (row === 0) {
                             bgCtx.fillStyle = "#f1f5f9";
                             bgCtx.font = `${boxSize * 0.85}px 'Andika'`;
@@ -180,70 +177,80 @@
             drawRow(0.58, "Small Letters", char.toLowerCase());
         }
 
-        function speakPhonics() {
-            window.speechSynthesis.cancel();
-            setTimeout(() => {
-                const char = letters[currentIdx];
-                const name = char === 'Z' ? 'Zed' : char;
-                const utterance = new SpeechSynthesisUtterance(name + "... " + phonics[char]);
-                utterance.lang = 'en-AU';
-                utterance.rate = 0.5;
-                window.speechSynthesis.speak(utterance);
-            }, 100);
-        }
-
         function setTool(t) {
             tool = t;
             document.getElementById('penBtn').className = t === 'pen' ? 'btn-grey active' : 'btn-grey';
             document.getElementById('eraserBtn').className = t === 'eraser' ? 'btn-grey active' : 'btn-grey';
-            if (t === 'star') {
-                document.getElementById('starBtn').classList.add('active');
-                document.getElementById('starBtn').innerText = "TAP TO PLACE ⭐";
-            } else {
-                document.getElementById('starBtn').classList.remove('active');
-                document.getElementById('starBtn').innerText = "GIVE A STAR ⭐";
+            document.getElementById('starBtn').innerText = t === 'star' ? "TAP ON SCREEN! ⭐" : "GIVE A STAR ⭐";
+            if(t === 'star') document.getElementById('starBtn').classList.add('active');
+            else document.getElementById('starBtn').classList.remove('active');
+        }
+
+        function manualSave() {
+            const char = letters[currentIdx];
+            const dataURL = drawCanvas.toDataURL("image/png");
+            
+            try {
+                localStorage.setItem(`vault_${char}`, dataURL);
+                localStorage.setItem('total_stars', totalStars);
+                localStorage.setItem('stars_positions', JSON.stringify(starsOnPage));
+                
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance("Workbook Saved"));
+                const btn = event.target;
+                btn.innerText = "✅ SAVED!";
+                setTimeout(() => btn.innerText = "💾 SAVE ALL", 1000);
+            } catch (e) {
+                alert("Storage Limit Reached.");
             }
         }
 
-        function saveMemory() {
+        async function manualLoad(withAlert = true) {
             const char = letters[currentIdx];
-            localStorage.setItem(`handwriting_${char}`, drawCanvas.toDataURL("image/png"));
-            localStorage.setItem('total_stars', totalStars);
-            localStorage.setItem('stars_positions', JSON.stringify(starsOnPage));
+            const savedData = localStorage.getItem(`vault_${char}`);
+            const savedStars = JSON.parse(localStorage.getItem('stars_positions')) || {};
+            const savedTotal = parseInt(localStorage.getItem('total_stars')) || 0;
+            
+            if (savedData) {
+                const img = new Image();
+                img.src = savedData;
+                await img.decode();
+                
+                drawCtx.globalCompositeOperation = 'source-over';
+                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                drawCtx.drawImage(img, 0, 0);
+                
+                // Sync internal star state with the loaded data
+                starsOnPage = savedStars;
+                totalStars = savedTotal;
+                document.getElementById('starTotal').innerText = totalStars;
+                
+                if(withAlert) window.speechSynthesis.speak(new SpeechSynthesisUtterance("Work Loaded"));
+            } else if (withAlert) {
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance("No save found"));
+            }
         }
 
         function changeLetter(dir) {
-            saveMemory();
+            const char = letters[currentIdx];
+            localStorage.setItem(`vault_${char}`, drawCanvas.toDataURL("image/png"));
+            localStorage.setItem('total_stars', totalStars);
+            localStorage.setItem('stars_positions', JSON.stringify(starsOnPage));
+
             currentIdx = (currentIdx + dir + 26) % 26;
             drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
             renderGrid();
-            reloadHistory();
-        }
-
-        function reloadHistory() {
-            const char = letters[currentIdx];
-            const savedData = localStorage.getItem(`handwriting_${char}`);
-            if (savedData) {
-                let img = new Image();
-                img.onload = () => {
-                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                    drawCtx.drawImage(img, 0, 0);
-                };
-                img.src = savedData;
-            }
+            manualLoad(false); 
         }
 
         function clearPage() {
-            if(confirm("Clear this entire page?")) {
+            if(confirm("Erase this page?")) {
                 const char = letters[currentIdx];
-                // Subtract stars only from the current page
                 if (starsOnPage[char]) {
                     totalStars -= starsOnPage[char].length;
                     starsOnPage[char] = [];
+                    document.getElementById('starTotal').innerText = totalStars;
                 }
                 drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                document.getElementById('starTotal').innerText = totalStars;
-                saveMemory();
             }
         }
 
@@ -262,59 +269,35 @@
             const start = (e) => {
                 const pos = getPos(e);
                 const char = letters[currentIdx];
-
+                
                 if (tool === 'star') {
                     drawCtx.globalCompositeOperation = 'source-over';
                     drawCtx.font = `${drawCanvas.width * 0.12}px serif`;
                     drawCtx.fillText("⭐", pos.x - (drawCanvas.width * 0.06), pos.y + (drawCanvas.width * 0.045));
-                    
-                    // Track star position on this page
                     if (!starsOnPage[char]) starsOnPage[char] = [];
                     starsOnPage[char].push({x: pos.x, y: pos.y});
-                    
                     totalStars++;
                     document.getElementById('starTotal').innerText = totalStars;
-                    saveMemory();
                     return;
                 }
-
-                if (tool === 'eraser') {
-                    // Check if eraser hit any stars
-                    if (starsOnPage[char]) {
-                        const eraserRadius = 40; 
-                        const remainingStars = starsOnPage[char].filter(s => {
-                            const dist = Math.sqrt((s.x - pos.x)**2 + (s.y - pos.y)**2);
-                            if (dist < eraserRadius) {
-                                totalStars = Math.max(0, totalStars - 1);
-                                document.getElementById('starTotal').innerText = totalStars;
-                                return false;
-                            }
-                            return true;
-                        });
-                        starsOnPage[char] = remainingStars;
-                    }
-                }
-
+                
                 isDrawing = true;
                 drawCtx.beginPath();
                 drawCtx.moveTo(pos.x, pos.y);
                 drawCtx.lineWidth = tool === 'pen' ? 10 : 80;
                 drawCtx.lineCap = 'round';
-                drawCtx.lineJoin = 'round';
-                drawCtx.globalCompositeOperation = tool === 'pen' ? 'source-over' : 'destination-out';
                 drawCtx.strokeStyle = tool === 'pen' ? '#1e293b' : 'rgba(0,0,0,1)';
+                drawCtx.globalCompositeOperation = tool === 'pen' ? 'source-over' : 'destination-out';
             };
 
             const move = (e) => {
                 if (!isDrawing) return;
                 const pos = getPos(e);
-                
-                // If erasing, continuously check for star collisions
                 if (tool === 'eraser') {
                     const char = letters[currentIdx];
                     if (starsOnPage[char]) {
-                        const eraserRadius = 40;
-                        const remainingStars = starsOnPage[char].filter(s => {
+                        const eraserRadius = 45;
+                        starsOnPage[char] = starsOnPage[char].filter(s => {
                             const dist = Math.sqrt((s.x - pos.x)**2 + (s.y - pos.y)**2);
                             if (dist < eraserRadius) {
                                 totalStars = Math.max(0, totalStars - 1);
@@ -323,27 +306,18 @@
                             }
                             return true;
                         });
-                        starsOnPage[char] = remainingStars;
                     }
                 }
-
                 drawCtx.lineTo(pos.x, pos.y);
                 drawCtx.stroke();
             };
 
-            const stop = () => {
-                if (isDrawing) {
-                    isDrawing = false;
-                    saveMemory();
-                }
-            };
-
             drawCanvas.addEventListener('mousedown', start);
             drawCanvas.addEventListener('mousemove', move);
-            window.addEventListener('mouseup', stop);
+            window.addEventListener('mouseup', () => isDrawing = false);
             drawCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e); }, {passive: false});
             drawCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); }, {passive: false});
-            drawCanvas.addEventListener('touchend', stop);
+            drawCanvas.addEventListener('touchend', () => isDrawing = false);
         }
 
         init();
